@@ -2,7 +2,7 @@ import pprint
 import asyncio
 import time
 
-from ranking import get_conditions, get_market_url, get_market_name
+from ranking import get_conditions, get_market_url, get_market_name, get_ranking
 
 
 async def main():
@@ -12,9 +12,10 @@ async def main():
 
     results = await get_market_name(search_list)
 
+    data = await get_ranking(results)
     end = time.time()
     print(end - start)
-    pprint.pprint(results)
+    pprint.pprint(data)
 
 if __name__ == "__main__":
     asyncio.run(main(), debug=True)
