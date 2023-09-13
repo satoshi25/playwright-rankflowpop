@@ -1,48 +1,8 @@
-from connection import db
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
 import aiohttp
 import asyncio
-
-
-def get_conditions():
-    # sql = ("SELECT upk.user_id, upk.id, p.product_url, p.product_name, k.keyword "
-    #        "FROM user_product_keyword as upk "
-    #        "JOIN product_keyword pk ON upk.product_keyword_id = pk.id "
-    #        "JOIN product p ON pk.product_id = p.id "
-    #        "JOIN keyword k ON pk.keyword_id = k.id "
-    #        "ORDER BY upk.user_id ASC;")
-
-    sql = ("SELECT upk.user_id, upk.id, p.product_url, p.product_name, k.keyword "
-           "FROM user_product_keyword as upk "
-           "JOIN product_keyword pk ON upk.product_keyword_id = pk.id "
-           "JOIN product p ON pk.product_id = p.id "
-           "JOIN keyword k ON pk.keyword_id = k.id "
-           "WHERE upk.user_id = 1 "
-           "ORDER BY upk.user_id ASC;")
-    cursor = db.cursor()
-    cursor.execute(sql)
-    p_list = cursor.fetchall()
-
-    product_list = []
-    for item in p_list:
-        data = {
-            "user_id": item[0],
-            "upk_id": item[1],
-            "p_url": item[2],
-            "p_user_name": item[3],
-            "keyword": item[4],
-            "m_url": "",
-            "m_name": "",
-            "p_name": "",
-            "result": "",
-        }
-        product_list.append(data)
-    return product_list
-
-
-# ===========================================================================================
 
 
 def get_market_url(p_list):
@@ -85,8 +45,29 @@ async def condition_fetcher(session, product):
 async def get_ranking(products):
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch()
-        result = await asyncio.gather(*[fetcher_hub(product, browser) for product in products])
-        return result
+
+        results = await asyncio.gather(*[fetcher_hub(product, browser) for product in products])
+        # product 별로 한 페이지 html 요소 5개를 가진 list 를 묶은 list 가 반환 된다.
+        # results = [ [의자1html, 의자2html, 의자3html...], [바지1html, 바지2html,...] ... ]
+
+        for i in range(len(products)):
+            products[i]["result"] = results[i]
+
+        return products
+        # products = [
+        #               {
+        #                   "user_id": 1,
+        #                   "upk_id": 1,
+        #                   "p_url": "item.com",
+        #                   "p_user_name": "item",
+        #                   "keyword": "word1",
+        #                   "m_url": "item_market.com",
+        #                   "m_name": "item_market",
+        #                   "p_name": "item",
+        #                   "result": [],
+        #                   "html": [의자1html, 의자2html, 의자3html, ...],
+        #               }, ...
+        #            ]
 
 
 async def fetcher_hub(product, browser):
@@ -116,24 +97,4 @@ async def ranking_fetcher(browser, url):
     content = await page.content()
     soup = BeautifulSoup(content, "html.parser")
 
-    return soup.find("a", class_="product_link__TrAac linkAnchor").text
-    # result = []
-    # s_p_list = soup.find_all("div", class_="product_item__MDtDF")
-    # for s_p in s_p_list:
-    #     product_name = s_p.find("a", class_="product_link__TrAac linkAnchor").text
-    #     m_list = s_p.find("a", class_="product_mall_list__RU42O")
-    #     market_list = []
-    #     if not m_list:
-    #         market_name = s_p.find("a", class_="product_mall__hPiEH linkAnchor").text
-    #         market_list.append(market_name)
-    #     else:
-    #         for m in m_list:
-    #             m_name = m.find_all("span", class_="product_mall_name__MbUf3").text
-    #             market_list.append(m_name)
-    #     product = {
-    #         "p_name": product_name,
-    #         "m_list": market_list
-    #     }
-    #     result.append(product)
-    #
-    # return result
+    return soup.find("div", class_="basicList_list_basis__uNBZx")
