@@ -3,7 +3,7 @@ import asyncio
 import time
 
 from connection import get_conditions
-from ranking import get_market_url, get_market_name, get_ranking
+from ranking import get_market_url, get_market_name, get_page_list, html_parsing
 
 
 async def main():
@@ -12,11 +12,12 @@ async def main():
     conditions = get_conditions()
     search_list = get_market_url(conditions)
     results = await get_market_name(search_list)
-    data = await get_ranking(results)
+    data = await get_page_list(results)
+    parsing_data = html_parsing(data)
 
     end = time.time()
 
-    pprint.pprint(data)
+    pprint.pprint(parsing_data)
     print("time", end - start)
 
 if __name__ == "__main__":

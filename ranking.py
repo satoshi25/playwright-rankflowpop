@@ -42,7 +42,7 @@ async def condition_fetcher(session, product):
 # ===========================================================================================
 
 
-async def get_ranking(products):
+async def get_page_list(products):
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch()
 
@@ -82,7 +82,7 @@ async def fetcher_hub(product, browser):
     for url in url_list:
         result = await ranking_fetcher(browser, url)
         results.append(result)
-        await asyncio.sleep(3)
+        await asyncio.sleep(2)
 
     return results
 
@@ -98,3 +98,56 @@ async def ranking_fetcher(browser, url):
     soup = BeautifulSoup(content, "html.parser")
 
     return soup.find("div", class_="basicList_list_basis__uNBZx")
+
+
+# ===========================================================================================
+
+
+def html_parsing(products):
+
+    # product 는 하나의 product, keyword
+    for i, product in enumerate(products):
+        htmls = product["result"]
+
+        cnt = 1
+
+        # 하나의 html 페이지 parsing
+        for j, html in enumerate(htmls):
+            p_list = html.find_all("div", class_="product_item__MDtDF")
+
+            one_page = []
+
+            # p_list 는 한 페이지 에 있는 40개의 product 목록
+            # p 는 40개 랭킹 판매 목록 중 하나
+            for p in p_list:
+                product_info = {}
+                product_name = p.find("a", class_="product_link__TrAac linkAnchor").text
+                m_list = p.find("ul", class_="product_mall_list__RU42O")
+                market_list = []
+                if not m_list:
+                    market = p.find("a", class_="product_mall__hPiEH linkAnchor")
+                    print(market)
+                    print(type(market))
+                    market_alter = market.find("img")
+                    if not market_alter:
+                        market_name = market.text
+                        market_list.append(market_name)
+                    else:
+                        alt_name = market_alter.get("alt")
+                        if not alt_name:
+                            market_list.append("None")
+                        else:
+                            market_list.append(alt_name)
+                    print("===========", product_name)
+                else:
+                    for m in m_list:
+                        m_name = m.find("span", class_="product_mall_name__MbUf3").text
+                        market_list.append(m_name)
+
+                product_info["li_p_ranking"] = cnt
+                product_info["li_p_name"] = product_name
+                product_info["li_m_list"] = market_list
+                cnt += 1
+                one_page.append(product_info)
+            product["result"][j] = one_page
+    return products

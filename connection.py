@@ -44,8 +44,8 @@ def get_conditions():
             "m_url": "",
             "m_name": "",
             "p_name": "",
+            "ranking": "",
             "result": [],
-            "html": "",
         }
         product_list.append(data)
     return product_list
