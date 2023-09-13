@@ -82,7 +82,7 @@ async def fetcher_hub(product, browser):
     for url in url_list:
         result = await ranking_fetcher(browser, url)
         results.append(result)
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)
 
     return results
 
@@ -126,8 +126,6 @@ def html_parsing(products):
                 market_list = []
                 if not m_list:
                     market = p.find("a", class_="product_mall__hPiEH linkAnchor")
-                    print(market)
-                    print(type(market))
                     market_alter = market.find("img")
                     if not market_alter:
                         market_name = market.text
@@ -138,7 +136,6 @@ def html_parsing(products):
                             market_list.append("None")
                         else:
                             market_list.append(alt_name)
-                    print("===========", product_name)
                 else:
                     for m in m_list:
                         m_name = m.find("span", class_="product_mall_name__MbUf3").text
@@ -151,3 +148,31 @@ def html_parsing(products):
                 one_page.append(product_info)
             product["result"][j] = one_page
     return products
+
+
+# ===========================================================================================
+
+
+def calculate_ranking(products):
+
+    for product in products:
+        product_ranking = get_match_product(product["result"], product["p_name"], product["m_name"])
+
+        product["ranking"] = product_ranking
+
+        del product["result"]
+
+    return products
+
+
+def get_match_product(market_list, p_name, m_name):
+    p_ranking = 201
+    for page in market_list:
+        for market in page:
+            if p_name == market["li_p_name"]:
+                for m in market["li_m_list"]:
+                    if m_name == m:
+                        p_ranking = market["li_p_ranking"]
+                        return p_ranking
+
+    return p_ranking
