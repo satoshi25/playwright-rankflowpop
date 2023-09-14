@@ -1,52 +1,16 @@
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 
-import aiohttp
 import asyncio
 
 
-def get_market_url(p_list):
-    for p in p_list:
-        p_url = p["p_url"]
-        m_profile = "profile?cp=1"
-        p["m_url"] = f"{p_url.split('products')[0]}{m_profile}"
-    return p_list
-
-
-async def get_market_name(products):
-    async with aiohttp.ClientSession() as session:
-        m_url_results = await asyncio.gather(
-            *[condition_fetcher(session, product) for product in products]
-        )
-        return m_url_results
-
-
-async def condition_fetcher(session, product):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
-    }
-    async with session.get(product["m_url"], headers=headers, ssl=False) as response:
-        if response.status == 200:
-            html = await response.text()
-            soup = BeautifulSoup(html, "html.parser")
-            product["m_name"] = soup.find("strong", class_="name").text
-    async with session.get(product["p_url"], headers=headers, ssl=False) as response:
-        if response.status == 200:
-            html = await response.text()
-            soup = BeautifulSoup(html, "html.parser")
-            product["p_name"] = soup.find("h3", class_="_22kNQuEXmb _copyable").text
-            return product
-
-
-# ===========================================================================================
-
-
 async def get_page_list(products):
+    semaphore = asyncio.Semaphore(5)
+
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch()
 
-        results = await asyncio.gather(*[fetcher_hub(product, browser) for product in products])
+        results = await asyncio.gather(*[fetcher_hub(semaphore, product, browser) for product in products])
         # product 별로 한 페이지 html 요소 5개를 가진 list 를 묶은 list 가 반환 된다.
         # results = [ [의자1html, 의자2html, 의자3html...], [바지1html, 바지2html,...] ... ]
 
@@ -59,32 +23,32 @@ async def get_page_list(products):
         #                   "user_id": 1,
         #                   "upk_id": 1,
         #                   "p_url": "item.com",
-        #                   "p_user_name": "item",
-        #                   "keyword": "word1",
-        #                   "m_url": "item_market.com",
-        #                   "m_name": "item_market",
-        #                   "p_name": "item",
-        #                   "result": [],
-        #                   "html": [의자1html, 의자2html, 의자3html, ...],
+        #                   "p_name": "편안한 의자",
+        #                   "s_name": "편한 의자몰",
+        #                   "keyword": "의자",
+        #                   "ranking": -1
+        #                   "result": [의자1html, 의자2html, 의자3html, ...],
         #               }, ...
         #            ]
 
 
-async def fetcher_hub(product, browser):
-    keyword, pagesize = product.get("keyword"), 40
-    url_list = []
-    for page in range(1, 6):
-        shopping_url = (f"https://search.shopping.naver.com/search/all?frm=NVSHATC&origQuery={keyword}"
-                        f"&pagingIndex={page}&pagingSize={pagesize}&productSet=total&query={keyword}"
-                        f"&sort=rel&timestamp=&viewType=list")
-        url_list.append(shopping_url)
-    results = []
-    for url in url_list:
-        result = await ranking_fetcher(browser, url)
-        results.append(result)
-        await asyncio.sleep(3)
+async def fetcher_hub(semaphore, product, browser):
 
-    return results
+    async with semaphore:
+        keyword, pagesize = product.get("keyword"), 80
+        url_list = []
+        for page in range(1, 6):
+            shopping_url = (f"https://search.shopping.naver.com/search/all?frm=NVSHATC&origQuery={keyword}"
+                            f"&pagingIndex={page}&pagingSize={pagesize}&productSet=total&query={keyword}"
+                            f"&sort=rel&timestamp=&viewType=list")
+            url_list.append(shopping_url)
+        results = []
+        for url in url_list:
+            result = await ranking_fetcher(browser, url)
+            results.append(result)
+            await asyncio.sleep(10)
+
+        return results
 
 
 async def ranking_fetcher(browser, url):
@@ -106,7 +70,7 @@ async def ranking_fetcher(browser, url):
 def html_parsing(products):
 
     # product 는 하나의 product, keyword
-    for i, product in enumerate(products):
+    for product in products:
         htmls = product["result"]
 
         cnt = 1
@@ -156,7 +120,7 @@ def html_parsing(products):
 def calculate_ranking(products):
 
     for product in products:
-        product_ranking = get_match_product(product["result"], product["p_name"], product["m_name"])
+        product_ranking = get_match_product(product["result"], product["p_name"], product["s_name"])
 
         product["ranking"] = product_ranking
 
@@ -166,7 +130,7 @@ def calculate_ranking(products):
 
 
 def get_match_product(market_list, p_name, m_name):
-    p_ranking = 201
+    p_ranking = -1
     for page in market_list:
         for market in page:
             if p_name == market["li_p_name"]:
