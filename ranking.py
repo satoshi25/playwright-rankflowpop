@@ -1,7 +1,12 @@
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
+from dotenv import load_dotenv
 
 import asyncio
+import os
+
+
+load_dotenv()
 
 
 async def get_page_list(products):
@@ -11,33 +16,22 @@ async def get_page_list(products):
         browser = await playwright.chromium.launch()
 
         results = await asyncio.gather(*[fetcher_hub(semaphore, product, browser) for product in products])
-        # product 별로 한 페이지 html 요소 5개를 가진 list 를 묶은 list 가 반환 된다.
-        # results = [ [의자1html, 의자2html, 의자3html...], [바지1html, 바지2html,...] ... ]
 
         for i in range(len(products)):
             products[i]["result"] = results[i]
 
         return products
-        # products = [
-        #               {
-        #                   "user_id": 1,
-        #                   "upk_id": 1,
-        #                   "p_url": "item.com",
-        #                   "p_name": "편안한 의자",
-        #                   "s_name": "편한 의자몰",
-        #                   "keyword": "의자",
-        #                   "ranking": -1
-        #                   "result": [의자1html, 의자2html, 의자3html, ...],
-        #               }, ...
-        #            ]
 
 
 async def fetcher_hub(semaphore, product, browser):
+    limit_page = int(os.getenv("LIMIT_PAGE")) + 1
+    page_interval = int(os.getenv("PAGE_INTERVAL"))
+    page_list_cnt = int(os.getenv("PAGE_LIST_CNT"))
 
     async with semaphore:
-        keyword, pagesize = product.get("keyword"), 80
+        keyword, pagesize = product.get("keyword"), page_list_cnt
         url_list = []
-        for page in range(1, 6):
+        for page in range(1, limit_page):
             shopping_url = (f"https://search.shopping.naver.com/search/all?frm=NVSHATC&origQuery={keyword}"
                             f"&pagingIndex={page}&pagingSize={pagesize}&productSet=total&query={keyword}"
                             f"&sort=rel&timestamp=&viewType=list")
@@ -46,7 +40,7 @@ async def fetcher_hub(semaphore, product, browser):
         for url in url_list:
             result = await ranking_fetcher(browser, url)
             results.append(result)
-            await asyncio.sleep(10)
+            await asyncio.sleep(page_interval)
 
         return results
 
