@@ -10,3 +10,4 @@ lib/
 build/
 *.db
 error.log
+app.log
