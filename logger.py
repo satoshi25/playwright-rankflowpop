@@ -25,11 +25,3 @@ app_logger = logging.getLogger("app_logger")
 
 
 # ======================================================================================
-
-def convert_time_format(sec):
-    sec %= 24 * 3600
-    hour = sec // 3600
-    sec %= 3600
-    minute = sec // 60
-    sec %= 60
-    return f"{hour}시간 {minute}분 {sec}초"

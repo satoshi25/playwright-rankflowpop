@@ -14,8 +14,11 @@ async def get_page_list(products):
 
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch()
-
-        results = await asyncio.gather(*[fetcher_hub(semaphore, product, browser) for product in products])
+        user_agent_browser = await browser.new_context(
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+        )
+        results = await asyncio.gather(*[fetcher_hub(semaphore, product, user_agent_browser) for product in products])
 
         for i in range(len(products)):
             products[i]["result"] = results[i]
@@ -56,6 +59,7 @@ async def ranking_fetcher(browser, url):
 
     content = await page.content()
     soup = BeautifulSoup(content, "html.parser")
+    await page.close()
 
     return soup.find("div", class_="basicList_list_basis__uNBZx")
 
@@ -67,7 +71,6 @@ def html_parsing(products):
 
         cnt = 1
 
-        # 하나의 html 페이지 parsing
         for j, html in enumerate(htmls):
             p_list = html.find_all("div", class_="product_item__MDtDF")
 

@@ -9,7 +9,7 @@ import os
 
 from connection import get_conditions, insert_product_ranking
 from ranking import get_page_list, html_parsing, calculate_ranking
-from logger import error_logger, app_logger, convert_time_format
+from logger import error_logger, app_logger
 
 
 load_dotenv()
@@ -20,7 +20,6 @@ minute = os.getenv("TASK_MINUTE")
 
 
 async def main():
-    start = time.time()
     today = date.today()
     interval = int(os.getenv("USER_INTERVAL"))
     error_cnt = -1
@@ -40,7 +39,7 @@ async def main():
                 product_ranking_data = calculate_ranking(parsing_data)
 
                 insert_product_ranking(product_ranking_data, today)
-                app_logger.info(f"user {product_ranking_data[0]['user_id']} DB insert 완료")
+                app_logger.info(f"user {product_ranking_data[0]['user_id']} DB insert complete")
 
                 is_error = False
                 await asyncio.sleep(interval)
@@ -51,9 +50,7 @@ async def main():
             is_error = True
             await asyncio.sleep(interval*2)
 
-    end = time.time()
-    running_time = convert_time_format(start - end)
-    app_logger.info(f"{today} DB insert 완료, 소요 시간: {running_time}")
+    app_logger.info(f"{today} DB insert complete")
 
 
 scheduler = AsyncIOScheduler()
