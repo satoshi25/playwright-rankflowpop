@@ -48,9 +48,6 @@ def get_conditions():
     return product_dict
 
 
-# ===========================================================================================
-
-
 def insert_product_ranking(products_ranking, today):
     sql_insert_data: str = \
         "INSERT INTO rankflow.record (user_product_keyword_id, search_date, ranking) VALUES (%s, %s, %s)"

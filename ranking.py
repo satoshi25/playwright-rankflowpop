@@ -46,11 +46,13 @@ async def fetcher_hub(semaphore, product, browser):
 
 
 async def ranking_fetcher(browser, url):
+    page_loading_time = int(os.getenv("PAGE_LOADING_TIME"))
+    timeout_time = int(os.getenv("TIMEOUT_TIME"))
     page = await browser.new_page()
 
-    await page.goto(url)
+    await page.goto(url, timeout=timeout_time)
     await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-    await asyncio.sleep(3)
+    await asyncio.sleep(page_loading_time)
 
     content = await page.content()
     soup = BeautifulSoup(content, "html.parser")
@@ -58,12 +60,8 @@ async def ranking_fetcher(browser, url):
     return soup.find("div", class_="basicList_list_basis__uNBZx")
 
 
-# ===========================================================================================
-
-
 def html_parsing(products):
 
-    # product 는 하나의 product, keyword
     for product in products:
         htmls = product["result"]
 
@@ -75,8 +73,6 @@ def html_parsing(products):
 
             one_page = []
 
-            # p_list 는 한 페이지 에 있는 40개의 product 목록
-            # p 는 40개 랭킹 판매 목록 중 하나
             for p in p_list:
                 product_info = {}
                 product_name = p.find("a", class_="product_link__TrAac linkAnchor").text
@@ -106,9 +102,6 @@ def html_parsing(products):
                 one_page.append(product_info)
             product["result"][j] = one_page
     return products
-
-
-# ===========================================================================================
 
 
 def calculate_ranking(products):
