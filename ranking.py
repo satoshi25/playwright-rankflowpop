@@ -14,15 +14,18 @@ async def get_page_list(products):
 
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch()
-        user_agent_browser = await browser.new_context(
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                       "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+
+        context = await browser.new_context(
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537',
         )
-        results = await asyncio.gather(*[fetcher_hub(semaphore, product, user_agent_browser) for product in products])
+        results = await asyncio.gather(*[fetcher_hub(semaphore, product, context) for product in products])
 
         for i in range(len(products)):
             products[i]["result"] = results[i]
 
+        await context.close()
+        await browser.close()
         return products
 
 
