@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import asyncio
 import os
 
+from logger import app_logger
+
 
 load_dotenv()
 
@@ -61,6 +63,7 @@ async def ranking_fetcher(browser, url):
     await asyncio.sleep(page_loading_time)
 
     content = await page.content()
+    app_logger.info(content)
     soup = BeautifulSoup(content, "html.parser")
     await page.close()
 
