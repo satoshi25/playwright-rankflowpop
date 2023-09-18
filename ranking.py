@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 import asyncio
 import os
+import random
 
 from logger import app_logger
 
@@ -18,8 +19,13 @@ async def get_page_list(products):
         browser = await playwright.chromium.launch()
 
         context = await browser.new_context(
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537',
+            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+            extra_http_headers={
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
         )
         results = await asyncio.gather(*[fetcher_hub(semaphore, product, context) for product in products])
 
@@ -48,7 +54,7 @@ async def fetcher_hub(semaphore, product, browser):
         for url in url_list:
             result = await ranking_fetcher(browser, url)
             results.append(result)
-            await asyncio.sleep(page_interval)
+            await asyncio.sleep(random.uniform(page_interval, page_interval + 3))
 
         return results
 

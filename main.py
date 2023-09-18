@@ -4,7 +4,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pytz import timezone
 
 import asyncio
-import time
+import random
 import os
 
 from connection import get_conditions, insert_product_ranking
@@ -42,7 +42,7 @@ async def main():
                 app_logger.info(f"user {product_ranking_data[0]['user_id']} DB insert complete")
 
                 is_error = False
-                await asyncio.sleep(interval)
+                await asyncio.sleep(random.uniform(interval, interval + 5))
 
         except Exception as error:
             error_logger.error(f"Error: {error}", exc_info=True)
