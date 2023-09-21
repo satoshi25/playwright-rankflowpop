@@ -13,10 +13,15 @@ load_dotenv()
 
 
 async def get_page_list(products):
+    p_server = os.getenv("P_SERVER")
     semaphore = asyncio.Semaphore(5)
 
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch()
+        browser = await playwright.chromium.launch(
+            proxy={
+                "server": f"{p_server}"
+            }
+        )
 
         context = await browser.new_context(
             user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
@@ -69,7 +74,6 @@ async def ranking_fetcher(browser, url):
     await asyncio.sleep(page_loading_time)
 
     content = await page.content()
-    app_logger.info(content)
     soup = BeautifulSoup(content, "html.parser")
     await page.close()
 

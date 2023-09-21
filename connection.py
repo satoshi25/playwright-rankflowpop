@@ -50,7 +50,7 @@ def get_conditions():
 
 def insert_product_ranking(products_ranking, today):
     sql_insert_data: str = \
-        "INSERT INTO rankflow.record (user_product_keyword_id, search_date, ranking) VALUES (%s, %s, %s)"
+        "INSERT INTO record (user_product_keyword_id, search_date, ranking) VALUES (%s, %s, %s)"
     cursor = db.cursor()
 
     for product in products_ranking:
