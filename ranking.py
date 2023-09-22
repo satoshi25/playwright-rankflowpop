@@ -81,7 +81,7 @@ async def ranking_fetcher(browser, url):
 
 
 def html_parsing(products):
-
+    ad_cnt = 0
     for product in products:
         htmls = product["result"]
 
@@ -89,38 +89,42 @@ def html_parsing(products):
 
         for j, html in enumerate(htmls):
             p_list = html.find_all("div", class_="product_item__MDtDF")
+            if not p_list:
+                app_logger("Access Denied, html_parsing")
+                ad_cnt += 1
+                product["result"][j] = None
+            else:
+                one_page = []
 
-            one_page = []
-
-            for p in p_list:
-                product_info = {}
-                product_name = p.find("a", class_="product_link__TrAac linkAnchor").text
-                m_list = p.find("ul", class_="product_mall_list__RU42O")
-                market_list = []
-                if not m_list:
-                    market = p.find("a", class_="product_mall__hPiEH linkAnchor")
-                    market_alter = market.find("img")
-                    if not market_alter:
-                        market_name = market.text
-                        market_list.append(market_name)
-                    else:
-                        alt_name = market_alter.get("alt")
-                        if not alt_name:
-                            market_list.append("None")
+                for p in p_list:
+                    product_info = {}
+                    product_name = p.find("a", class_="product_link__TrAac linkAnchor").text
+                    m_list = p.find("ul", class_="product_mall_list__RU42O")
+                    market_list = []
+                    if not m_list:
+                        market = p.find("a", class_="product_mall__hPiEH linkAnchor")
+                        market_alter = market.find("img")
+                        if not market_alter:
+                            market_name = market.text
+                            market_list.append(market_name)
                         else:
-                            market_list.append(alt_name)
-                else:
-                    for m in m_list:
-                        m_name = m.find("span", class_="product_mall_name__MbUf3").text
-                        market_list.append(m_name)
+                            alt_name = market_alter.get("alt")
+                            if not alt_name:
+                                market_list.append("None")
+                            else:
+                                market_list.append(alt_name)
+                    else:
+                        for m in m_list:
+                            m_name = m.find("span", class_="product_mall_name__MbUf3").text
+                            market_list.append(m_name)
 
-                product_info["li_p_ranking"] = cnt
-                product_info["li_p_name"] = product_name
-                product_info["li_m_list"] = market_list
-                cnt += 1
-                one_page.append(product_info)
-            product["result"][j] = one_page
-    return products
+                    product_info["li_p_ranking"] = cnt
+                    product_info["li_p_name"] = product_name
+                    product_info["li_m_list"] = market_list
+                    cnt += 1
+                    one_page.append(product_info)
+                product["result"][j] = one_page
+    return [products, ad_cnt]
 
 
 def calculate_ranking(products):

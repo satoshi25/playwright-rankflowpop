@@ -36,13 +36,16 @@ async def main():
 
                 get_page_html_list = await get_page_list(user_products)
                 parsing_data = html_parsing(get_page_html_list)
-                product_ranking_data = calculate_ranking(parsing_data)
+                if parsing_data[1] > 0:
+                    app_logger("Scrapping Failed")
+                else:
+                    product_ranking_data = calculate_ranking(parsing_data[0])
 
-                insert_product_ranking(product_ranking_data, today)
-                app_logger.info(f"user {product_ranking_data[0]['user_id']} DB insert complete")
+                    insert_product_ranking(product_ranking_data, today)
+                    app_logger.info(f"user {product_ranking_data[0]['user_id']} DB insert complete")
 
-                is_error = False
-                await asyncio.sleep(random.uniform(interval, interval + 5))
+                    is_error = False
+                    await asyncio.sleep(random.uniform(interval, interval + 5))
 
         except Exception as error:
             error_logger.error(f"Error: {error}", exc_info=True)
