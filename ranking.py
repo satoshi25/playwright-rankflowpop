@@ -14,12 +14,16 @@ load_dotenv()
 
 async def get_page_list(products):
     p_server = os.getenv("P_SERVER")
+    p_user_server = os.getenv("P_USER_SERVER")
+    p_ps_server = os.getenv("P_PS_SERVER")
     semaphore = asyncio.Semaphore(5)
 
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(
             proxy={
-                "server": f"{p_server}"
+                "server": f"{p_server}",
+                "username": f"{p_user_server}",
+                "password": f"{p_ps_server}",
             }
         )
 
